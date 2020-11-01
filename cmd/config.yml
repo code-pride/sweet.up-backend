@@ -1,0 +1,12 @@
+http:
+  host: localhost:8080
+  readTimeout: 5
+  writeTimeout: 10
+  idleTimeout: 120
+
+core:
+  securityEnabled: false
+
+mongo:
+  host: mongodb://localhost:27017
+  db: sweet-up
