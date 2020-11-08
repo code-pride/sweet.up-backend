@@ -13,6 +13,6 @@ type Core struct {
 func Init(usrRep user.UserCommandQueryRepository, log *zap.SugaredLogger) *Core {
 	return &Core{
 		UserCommandHandler: user.NewUserCommandHandler(usrRep, log),
-		UserQueryHandler:   user.NewUserQueryHandler(),
+		UserQueryHandler:   user.NewUserQueryHandler(usrRep, log),
 	}
 }

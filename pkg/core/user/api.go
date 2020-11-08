@@ -34,6 +34,7 @@ type UserCommandQueryRepository interface {
 	FindById(id primitive.ObjectID) (*User, error)
 	CreateUser(user User) (*primitive.ObjectID, error)
 	UpdateUser(user User) error
+	UpdateUsers(users []User) error
 }
 
 func (u *User) FromJSON(r io.Reader) error {

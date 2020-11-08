@@ -1,6 +1,8 @@
 package user
 
 import (
+	"errors"
+
 	"github.com/code-pride/sweet.up/pkg/core/apperror"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.uber.org/zap"
@@ -61,19 +63,25 @@ func (uch *userCommandHandler) AcceptPair(userId primitive.ObjectID, pairId prim
 		return err
 	}
 
-	if usr.Pair.ID != primitive.NilObjectID {
-		return apperror.NewApplicationError(nil, "User already has a pair")
+	if usr.Pair.ID != primitive.NilObjectID && usr.Pair.Accepted {
+		return apperror.NewUserReqError("User already has a pair")
 	}
 
 	if pair.Pair.ID != primitive.NilObjectID {
-		return apperror.NewApplicationError(nil, "User pair already has a pair")
+		return apperror.NewUserReqError("User pair already has a pair")
 	}
 
 	usr.Pair.ID = pairId
 	pair.Pair.ID = userId
 
-	uch.userRepository.UpdateUser(*usr)
-	uch.userRepository.UpdateUser(*pair)
+	var usrsToUp []User
+	usrsToUp = append(usrsToUp, *usr, *pair)
+
+	err = uch.userRepository.UpdateUsers(usrsToUp)
+	if err != nil {
+		uch.log.Error("Unable to accept pair: %s", err)
+		return err
+	}
 
 	return nil
 }
@@ -81,11 +89,10 @@ func (uch *userCommandHandler) AcceptPair(userId primitive.ObjectID, pairId prim
 func (uch *userCommandHandler) getUser(userId primitive.ObjectID) (*User, error) {
 	usr, err := uch.userRepository.FindById(userId)
 	if err != nil {
-		_, ok := err.(*apperror.EntityNotFoundError)
-		if !ok {
-			return nil, err
+		if !errors.Is(err, apperror.ErrEntityNotFound) {
+			uch.log.Error(err)
 		}
-		return nil, nil
+		return nil, err
 	}
 	return usr, nil
 }

@@ -2,12 +2,14 @@ package rest
 
 import (
 	"encoding/json"
+	"errors"
 	"net/http"
 
 	"go.mongodb.org/mongo-driver/bson/primitive"
 
 	"github.com/gorilla/mux"
 
+	"github.com/code-pride/sweet.up/pkg/core/apperror"
 	"github.com/code-pride/sweet.up/pkg/core/user"
 	"go.uber.org/zap"
 )
@@ -81,9 +83,35 @@ func (c *UserQueryCommandController) AcceptPair(rw http.ResponseWriter, r *http.
 
 	err = c.userCommandHandler.AcceptPair(idUsr, idPair)
 	if err != nil {
-		http.Error(rw, "Unable to accept pair", http.StatusInternalServerError)
+		badReqErr, ok := err.(*apperror.UserReqError)
+		if ok {
+			http.Error(rw, badReqErr.Error(), http.StatusBadRequest)
+			return
+		}
+
+		http.Error(rw, err.Error(), http.StatusInternalServerError)
 		return
 	}
+}
+
+func (c *UserQueryCommandController) FindById(rw http.ResponseWriter, r *http.Request) {
+
+	vars := mux.Vars(r)
+	id, err := primitive.ObjectIDFromHex(vars["id"])
+	if err != nil {
+		http.Error(rw, "Unable to convert id", http.StatusBadRequest)
+		return
+	}
+
+	usr, err := c.userQueryHandler.FindById(id)
+	if err != nil {
+		if errors.Is(err, apperror.ErrEntityNotFound) {
+			http.Error(rw, err.Error(), http.StatusNotFound)
+		}
+		http.Error(rw, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	json.NewEncoder(rw).Encode(usr)
 }
 
 func (c *UserQueryCommandController) AttachContoller(sm *mux.Router) {
@@ -93,4 +121,7 @@ func (c *UserQueryCommandController) AttachContoller(sm *mux.Router) {
 	putRouter := sm.Methods(http.MethodPost).Subrouter()
 	putRouter.HandleFunc("/user/{id}", c.UpdateUserDetails)
 	putRouter.HandleFunc("/user/{idUsr}/pair/{idPair}", c.AcceptPair)
+
+	getRouter := sm.Methods(http.MethodGet).Subrouter()
+	getRouter.HandleFunc("/user/{is}", c.FindById)
 }

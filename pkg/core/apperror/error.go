@@ -1,34 +1,69 @@
 package apperror
 
-type Code int
-
-const (
-	QueriedEntityNotFound Code = iota
-	UpdatedEntityNotFound
-	ExternalServiceError
-	InternalServerError
+var (
+	ErrEntityNotFound = NewBaseError("Entity not found")
 )
 
-type ApplicationError struct {
-	baseError error
-	message   string
+type ExternalServiceError struct {
+	serviceError error
+	serviceName  string
 }
 
-type EntityNotFoundError struct {
-	ApplicationError
-}
-
-func NewApplicationError(baseError error, message string) ApplicationError {
-	return ApplicationError{
-		baseError: baseError,
-		message:   message,
+func NewExternalServiceError(serviceError error, serviceName string) *ExternalServiceError {
+	return &ExternalServiceError{
+		serviceError: serviceError,
+		serviceName:  serviceName,
 	}
 }
 
-func NewEntityNotFoundError(baseError error, message string) EntityNotFoundError {
-	return EntityNotFoundError{NewApplicationError(baseError, message)}
+func (err *ExternalServiceError) Error() string {
+	return "External service " + err.serviceName + " request request failed with error: " + err.serviceError.Error()
 }
 
-func (appError ApplicationError) Error() string {
-	return appError.message
+type DatabaseError struct {
+	driverError error
+}
+
+func NewDatabaseError(driverError error) *DatabaseError {
+	return &DatabaseError{
+		driverError: driverError,
+	}
+}
+
+func (err *DatabaseError) Error() string {
+	return "Database request failed with error: " + err.driverError.Error()
+}
+
+type BaseError struct {
+	message string
+}
+
+func NewBaseError(message string) *BaseError {
+	return &BaseError{
+		message: message,
+	}
+}
+
+func (err *BaseError) Error() string {
+	return err.message
+}
+
+type InternalServerError struct {
+	BaseError
+}
+
+func NewInternalServerError(message string) *InternalServerError {
+	return &InternalServerError{
+		*NewBaseError(message),
+	}
+}
+
+type UserReqError struct {
+	BaseError
+}
+
+func NewUserReqError(message string) *UserReqError {
+	return &UserReqError{
+		*NewBaseError(message),
+	}
 }
