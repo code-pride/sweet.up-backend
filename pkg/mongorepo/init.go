@@ -44,7 +44,7 @@ func createMongoClient(url string, log *zap.SugaredLogger) *mongo.Client {
 		log.Panicf(err.Error())
 	}
 
-	log.Info("Successfully connected to the ", url)
+	log.Debug("Successfully initialized mongo repository ", url)
 
 	return client
 }
