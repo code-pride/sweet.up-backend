@@ -4,8 +4,8 @@ services:
     backend:
         container_name: sweet-up-backend
         build:
-            context: .
-            dockerfile: ./Dockerfile
+            context: ../
+            dockerfile: ./docker/Dockerfile
         volumes:
             - ./backend:/backend
         ports:
